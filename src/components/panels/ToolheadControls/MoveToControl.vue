@@ -64,6 +64,35 @@
                             @submit="sendCmd" />
                     </v-col>
                 </v-row>
+                <v-row v-if="showAuxiliaryCoordinates" dense>
+                    <v-col :class="el.is.xsmall ? 'col-12' : 'col-4'">
+                        <move-to-input
+                            :value="gcodePositions.u"
+                            :label="livePositions.u"
+                            suffix="U"
+                            :step="0.01"
+                            :current-pos="gcodePositions.u"
+                            readonly />
+                    </v-col>
+                    <v-col :class="el.is.xsmall ? 'col-12' : 'col-4'">
+                        <move-to-input
+                            :value="gcodePositions.v"
+                            :label="livePositions.v"
+                            suffix="V"
+                            :step="0.01"
+                            :current-pos="gcodePositions.v"
+                            readonly />
+                    </v-col>
+                    <v-col :class="el.is.xsmall ? 'col-12' : 'col-4'">
+                        <move-to-input
+                            :value="gcodePositions.w"
+                            :label="livePositions.w"
+                            suffix="W"
+                            :step="0.01"
+                            :current-pos="gcodePositions.w"
+                            readonly />
+                    </v-col>
+                </v-row>
             </template>
         </responsive>
     </v-container>
@@ -87,6 +116,20 @@ interface MoveToInputs {
     y: MoveToAxisInput
     z: MoveToAxisInput
 }
+
+type CoordinateAxis = 'X' | 'Y' | 'Z' | 'U' | 'V' | 'W'
+type AxisMap = Record<CoordinateAxis, number>
+
+interface CoordinatePositions {
+    x: string
+    y: string
+    z: string
+    u: string
+    v: string
+    w: string
+}
+
+const auxiliaryAxes: CoordinateAxis[] = ['U', 'V', 'W']
 
 @Component({
     components: { MoveToInput, Responsive },
@@ -129,22 +172,44 @@ export default class MoveToControl extends Mixins(BaseMixin, ControlMixin) {
         return this.$store.state.printer.gcode_move?.absolute_coordinates ?? true
     }
 
-    get livePositions() {
-        const pos = this.$store.state.printer.motion_report?.live_position ?? [0, 0, 0]
+    get configuredAxisMap(): Partial<AxisMap> {
+        const axisMap = this.$store.state.printer.gcode_move?.axis_map ?? {}
+
         return {
-            x: pos[0]?.toFixed(2) ?? '--',
-            y: pos[1]?.toFixed(2) ?? '--',
-            z: pos[2]?.toFixed(3) ?? '--',
+            X: axisMap.X ?? axisMap.x,
+            Y: axisMap.Y ?? axisMap.y,
+            Z: axisMap.Z ?? axisMap.z,
+            U: axisMap.U ?? axisMap.u,
+            V: axisMap.V ?? axisMap.v,
+            W: axisMap.W ?? axisMap.w,
         }
     }
 
-    get gcodePositions() {
-        const pos = this.$store.state.printer.gcode_move?.gcode_position ?? [0, 0, 0]
+    get axisMap(): AxisMap {
         return {
-            x: pos[0]?.toFixed(2) ?? '--',
-            y: pos[1]?.toFixed(2) ?? '--',
-            z: pos[2]?.toFixed(3) ?? '--',
+            X: this.configuredAxisMap.X ?? 0,
+            Y: this.configuredAxisMap.Y ?? 1,
+            Z: this.configuredAxisMap.Z ?? 2,
+            U: this.configuredAxisMap.U ?? 3,
+            V: this.configuredAxisMap.V ?? 4,
+            W: this.configuredAxisMap.W ?? 5,
         }
+    }
+
+    get showAuxiliaryCoordinates(): boolean {
+        return this.showCoordinates && auxiliaryAxes.every((axis) => Number.isInteger(this.configuredAxisMap[axis]))
+    }
+
+    get livePositions(): CoordinatePositions {
+        const pos = this.$store.state.printer.motion_report?.live_position ?? [0, 0, 0]
+
+        return this.formatPositions(pos)
+    }
+
+    get gcodePositions(): CoordinatePositions {
+        const pos = this.$store.state.printer.gcode_move?.gcode_position ?? [0, 0, 0]
+
+        return this.formatPositions(pos)
     }
 
     /**
@@ -172,6 +237,23 @@ export default class MoveToControl extends Mixins(BaseMixin, ControlMixin) {
 
     get containerClass() {
         return this.showControl ? 'pb-0' : ''
+    }
+
+    formatPositions(positions: number[]): CoordinatePositions {
+        const format = (axis: CoordinateAxis, digits: number): string => {
+            const position = positions[this.axisMap[axis]]
+
+            return typeof position === 'number' ? position.toFixed(digits) : '--'
+        }
+
+        return {
+            x: format('X', 2),
+            y: format('Y', 2),
+            z: format('Z', 3),
+            u: format('U', 2),
+            v: format('V', 2),
+            w: format('W', 2),
+        }
     }
 
     sendCmd(): void {

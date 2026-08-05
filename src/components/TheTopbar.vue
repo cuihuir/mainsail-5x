@@ -29,6 +29,7 @@
                 <v-icon class="d-md-none">{{ mdiContentSave }}</v-icon>
                 <span class="d-none d-md-inline">{{ $t('App.TopBar.SAVE_CONFIG') }}</span>
             </v-btn>
+            <operation-abort-button v-if="klippyIsConnected" />
             <v-btn
                 v-if="boolShowUploadAndPrint"
                 tile
@@ -91,6 +92,7 @@ import { mdiAlertOctagonOutline, mdiContentSave, mdiFileUpload, mdiClose, mdiClo
 import EmergencyStopDialog from '@/components/dialogs/EmergencyStopDialog.vue'
 import InlineSvg from 'vue-inline-svg'
 import ThemeMixin from '@/components/mixins/theme'
+import OperationAbortButton from '@/components/OperationAbortButton.vue'
 
 type uploadSnackbar = {
     status: boolean
@@ -105,6 +107,7 @@ type uploadSnackbar = {
     components: {
         EmergencyStopDialog,
         InlineSvg,
+        OperationAbortButton,
         Panel,
         TheSettingsMenu,
         TheTopCornerMenu,

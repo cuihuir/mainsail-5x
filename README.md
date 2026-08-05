@@ -77,6 +77,21 @@ You can find the latest release notes [here](https://github.com/mainsail-crew/ma
 - **[Additional Sensors](https://docs.mainsail.xyz/quicktips/additional-sensors):** _Add extra sensors to the temperature graph_
 - **Exclude Objects:** _Exclude parts of your print <sup>(not officially supported by Klipper yet)</sup>_
 
+## Klipper 5-Axis Fork Extensions
+
+This fork keeps the upstream Mainsail interface while adding two integrations for
+[`dt-123483/klipper-5axis`](https://github.com/dt-123483/klipper-5axis):
+
+- The toolhead position panel displays read-only `U`, `V`, and `W` coordinates when Klipper publishes a six-axis
+  `gcode_move.axis_map`.
+- An orange **Cancel Operation** button appears before **Upload & Print** when the Klipper
+  `operation_abort` object is available. It sends an out-of-band HTTP request to
+  `/printer/operation_abort/abort`, allowing tracked `G28`, `UVW_HOME`, `PRE_LEVEL`, and `PRINT_START` operations
+  to stop without waiting behind the G-Code mutex.
+
+The cancel button does not replace Mainsail's red emergency stop and does not interrupt ordinary `G0`/`G1` moves
+already queued on the MCU.
+
 ## Help and Support
 
 Do you need help or just want to talk? Join our active community on [Discord](https://discord.gg/skWTwTD)!

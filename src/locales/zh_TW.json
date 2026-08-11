@@ -82,6 +82,11 @@
             "PrintingETA": "{percent}% 列印中 - 預計完成時間：{eta} - {filename}"
         },
         "TopBar": {
+            "CancelConfirmationOperation": "確定要取消 {operation} 嗎？",
+            "CancelConfirmationOperationGeneric": "確定要請求取消目前操作嗎？",
+            "CancelConfirmationOperationPhase": "確定要在階段 {phase} 取消 {operation} 嗎？",
+            "CancelConfirmationPrint": "確定要取消目前列印嗎？此操作無法復原。",
+            "CancelConfirmationTitle": "確認取消",
             "CancelOperation": "取消操作",
             "CancelOperationAccepted": "已接受取消請求。",
             "CancelOperationActive": "取消 {operation}",
@@ -90,6 +95,9 @@
             "CancelOperationHint": "取消 G28、UVW_HOME、PRE_LEVEL 或 PRINT_START。",
             "CancelOperationNone": "目前沒有可取消的操作。",
             "CancelOperationPending": "正在取消",
+            "CancelPrint": "取消列印",
+            "CancelPrintHint": "取消目前列印件的列印。",
+            "CancelPrintPending": "正在取消列印",
             "CannotUploadTheFile": "無法上傳該檔案！",
             "EmergencyStop": "緊急停止",
             "SAVE_CONFIG": "儲存配置",

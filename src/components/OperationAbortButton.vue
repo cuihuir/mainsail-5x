@@ -1,28 +1,41 @@
 <template>
-    <v-btn
-        v-if="operationAbortSupported"
-        tile
-        :icon="$vuetify.breakpoint.smAndDown"
-        :text="$vuetify.breakpoint.mdAndUp"
-        color="warning"
-        class="button-min-width-auto px-3 d-none d-sm-flex operation-abort-button"
-        :aria-label="buttonTitle"
-        :title="buttonTitle"
-        :disabled="buttonDisabled"
-        :loading="requestPending"
-        @click="requestOperationAbort">
-        <v-icon :class="iconClasses">{{ mdiStopCircleOutline }}</v-icon>
-        <span class="d-none d-md-inline">{{ buttonLabel }}</span>
-    </v-btn>
+    <div v-if="cancelSupported" class="d-none d-sm-flex operation-abort-wrapper">
+        <v-btn
+            tile
+            :icon="$vuetify.breakpoint.smAndDown"
+            :text="$vuetify.breakpoint.mdAndUp"
+            color="warning"
+            class="button-min-width-auto px-3 operation-abort-button"
+            :aria-label="buttonTitle"
+            :title="buttonTitle"
+            :disabled="buttonDisabled"
+            :loading="buttonLoading"
+            @click="openCancellationConfirmation">
+            <v-icon :class="iconClasses">{{ mdiStopCircleOutline }}</v-icon>
+            <span class="d-none d-md-inline">{{ buttonLabel }}</span>
+        </v-btn>
+        <confirmation-dialog
+            v-model="showConfirmationDialog"
+            :title="$t('App.TopBar.CancelConfirmationTitle')"
+            :text="confirmationText"
+            :action-button-text="confirmationActionLabel"
+            :cancel-button-text="$t('Buttons.No')"
+            action-button-color="error"
+            @action="confirmCancellation" />
+    </div>
 </template>
 
 <script lang="ts">
 import axios from 'axios'
 import { mdiStopCircleOutline } from '@mdi/js'
-import { Component, Vue, Watch } from 'vue-property-decorator'
+import { Component, Mixins, Watch } from 'vue-property-decorator'
+import BaseMixin from '@/components/mixins/base'
+import ConfirmationDialog from '@/components/dialogs/ConfirmationDialog.vue'
+import { resolveCancellationTarget } from '@/components/operationCancel'
 
 const OPERATION_ABORT_ENDPOINT = '/printer/operation_abort/abort'
 const OPERATION_ABORT_REASON = 'mainsail_toolbar'
+const PRINT_CANCEL_LOADING = 'topbarPrintCancel'
 
 interface OperationAbortStatus {
     abort_requested?: boolean
@@ -36,12 +49,15 @@ interface OperationAbortResponse {
     result: OperationAbortStatus
 }
 
-@Component
-export default class OperationAbortButton extends Vue {
+@Component({
+    components: { ConfirmationDialog },
+})
+export default class OperationAbortButton extends Mixins(BaseMixin) {
     mdiStopCircleOutline = mdiStopCircleOutline
 
     abortPending = false
     requestPending = false
+    showConfirmationDialog = false
 
     get operationAbortStatus(): OperationAbortStatus | null {
         return this.$store.state.printer.operation_abort ?? null
@@ -49,6 +65,22 @@ export default class OperationAbortButton extends Vue {
 
     get operationAbortSupported(): boolean {
         return this.operationAbortStatus !== null
+    }
+
+    get cancelTarget() {
+        return resolveCancellationTarget(this.printer_state, this.operationAbortSupported)
+    }
+
+    get cancelSupported(): boolean {
+        return this.cancelTarget !== null
+    }
+
+    get printActive(): boolean {
+        return this.cancelTarget === 'print'
+    }
+
+    get printCancelPending(): boolean {
+        return this.loadings.includes(PRINT_CANCEL_LOADING)
     }
 
     get operationActive(): boolean {
@@ -68,16 +100,33 @@ export default class OperationAbortButton extends Vue {
     }
 
     get buttonDisabled(): boolean {
+        if (this.printActive) return this.printCancelPending
+
         return this.requestPending || this.abortPending || this.operationAbortRequested
     }
 
+    get buttonLoading(): boolean {
+        return this.requestPending || this.printCancelPending
+    }
+
     get buttonLabel(): string {
+        if (this.printActive) {
+            const key = this.printCancelPending ? 'App.TopBar.CancelPrintPending' : 'App.TopBar.CancelPrint'
+
+            return this.$t(key).toString()
+        }
+
         const key = this.buttonDisabled ? 'App.TopBar.CancelOperationPending' : 'App.TopBar.CancelOperation'
 
         return this.$t(key).toString()
     }
 
     get buttonTitle(): string {
+        if (this.printActive) {
+            const key = this.printCancelPending ? 'App.TopBar.CancelPrintPending' : 'App.TopBar.CancelPrintHint'
+
+            return this.$t(key).toString()
+        }
         if (this.buttonDisabled) return this.$t('App.TopBar.CancelOperationPending').toString()
         if (!this.operationActive || !this.operationName) {
             return this.$t('App.TopBar.CancelOperationHint').toString()
@@ -92,10 +141,31 @@ export default class OperationAbortButton extends Vue {
         }).toString()
     }
 
+    get confirmationText(): string {
+        if (this.printActive) return this.$t('App.TopBar.CancelConfirmationPrint').toString()
+        if (!this.operationActive || !this.operationName) {
+            return this.$t('App.TopBar.CancelConfirmationOperationGeneric').toString()
+        }
+        if (!this.operationPhase) {
+            return this.$t('App.TopBar.CancelConfirmationOperation', { operation: this.operationName }).toString()
+        }
+
+        return this.$t('App.TopBar.CancelConfirmationOperationPhase', {
+            operation: this.operationName,
+            phase: this.operationPhase,
+        }).toString()
+    }
+
+    get confirmationActionLabel(): string {
+        const key = this.printActive ? 'App.TopBar.CancelPrint' : 'App.TopBar.CancelOperation'
+
+        return this.$t(key).toString()
+    }
+
     get iconClasses(): Record<string, boolean> {
         return {
             'mr-md-2': true,
-            'operation-abort-pulse': this.operationActive && !this.buttonDisabled,
+            'operation-abort-pulse': (this.printActive || this.operationActive) && !this.buttonDisabled,
         }
     }
 
@@ -104,8 +174,29 @@ export default class OperationAbortButton extends Vue {
         if (!active) this.abortPending = false
     }
 
-    async requestOperationAbort(): Promise<void> {
+    openCancellationConfirmation(): void {
         if (this.buttonDisabled) return
+
+        this.showConfirmationDialog = true
+    }
+
+    confirmCancellation(): void {
+        if (this.printActive) {
+            this.requestPrintCancel()
+            return
+        }
+
+        void this.requestOperationAbort()
+    }
+
+    requestPrintCancel(): void {
+        if (this.printCancelPending) return
+
+        this.$socket.emit('printer.print.cancel', {}, { loading: PRINT_CANCEL_LOADING })
+    }
+
+    async requestOperationAbort(): Promise<void> {
+        if (this.requestPending || this.abortPending || this.operationAbortRequested) return
 
         this.requestPending = true
         try {
@@ -132,6 +223,10 @@ export default class OperationAbortButton extends Vue {
 </script>
 
 <style scoped>
+.operation-abort-wrapper {
+    height: 100%;
+}
+
 .operation-abort-button {
     min-width: auto !important;
     height: 100% !important;

@@ -82,6 +82,11 @@
             "PrintingETA": "{percent}% Printing - ETA: {eta} - {filename}"
         },
         "TopBar": {
+            "CancelConfirmationOperation": "Are you sure you want to cancel {operation}?",
+            "CancelConfirmationOperationGeneric": "Are you sure you want to request cancellation of the current operation?",
+            "CancelConfirmationOperationPhase": "Are you sure you want to cancel {operation} during phase {phase}?",
+            "CancelConfirmationPrint": "Are you sure you want to cancel the current print? This cannot be undone.",
+            "CancelConfirmationTitle": "Confirm Cancellation",
             "CancelOperation": "Cancel Operation",
             "CancelOperationAccepted": "Cancellation request accepted.",
             "CancelOperationActive": "Cancel {operation}",
@@ -90,6 +95,9 @@
             "CancelOperationHint": "Cancel G28, UVW_HOME, PRE_LEVEL, or PRINT_START.",
             "CancelOperationNone": "No cancellable operation is active.",
             "CancelOperationPending": "Cancelling",
+            "CancelPrint": "Cancel Print",
+            "CancelPrintHint": "Cancel the current print.",
+            "CancelPrintPending": "Cancelling Print",
             "CannotUploadTheFile": "Cannot upload the file!",
             "EmergencyStop": "Emergency Stop",
             "SAVE_CONFIG": "SAVE CONFIG",

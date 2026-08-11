@@ -84,10 +84,10 @@ This fork keeps the upstream Mainsail interface while adding two integrations fo
 
 - The toolhead position panel displays read-only `U`, `V`, and `W` coordinates when Klipper publishes a six-axis
   `gcode_move.axis_map`.
-- An orange **Cancel Operation** button appears before **Upload & Print** when the Klipper
-  `operation_abort` object is available. It sends an out-of-band HTTP request to
-  `/printer/operation_abort/abort`, allowing tracked `G28`, `UVW_HOME`, `PRE_LEVEL`, and `PRINT_START` operations
-  to stop without waiting behind the G-Code mutex.
+- An orange cancellation button appears before **Upload & Print**. During a print it uses Moonraker's
+  `printer.print.cancel` request; otherwise, when Klipper publishes the `operation_abort` object, it sends an
+  out-of-band HTTP request to `/printer/operation_abort/abort` for tracked `G28`, `UVW_HOME`, `PRE_LEVEL`, and
+  `PRINT_START` operations. Both paths require confirmation before a cancellation request is sent.
 
 The cancel button does not replace Mainsail's red emergency stop and does not interrupt ordinary `G0`/`G1` moves
 already queued on the MCU.

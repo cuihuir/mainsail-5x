@@ -17,6 +17,10 @@
             <start-print-dialog-mmu v-else-if="existsMmu" :file="file" />
             <start-print-dialog-spoolman v-else-if="existsSpoolman" :file="file" />
             <start-print-dialog-timelapse v-if="existsTimelapse" />
+            <v-card-text class="py-3 bt-1">
+                <settings-row title="Z tilt adjust" :dense="true"><v-switch v-model="zTiltEnabled" hide-details class="mt-0" /></settings-row>
+                <settings-row title="Adaptive bed mesh" :dense="true"><v-switch v-model="bedMeshEnabled" hide-details class="mt-0" /></settings-row>
+            </v-card-text>
             <v-divider v-if="showDivider" class="my-0" />
             <v-card-actions>
                 <v-spacer />
@@ -46,6 +50,8 @@ import AfcMixin from '@/components/mixins/afc'
     components: { SettingsRow },
 })
 export default class StartPrintDialog extends Mixins(BaseMixin, AfcMixin) {
+    zTiltEnabled = true
+    bedMeshEnabled = true
     mdiPrinter3d = mdiPrinter3d
 
     @VModel({ type: Boolean }) showDialog!: boolean
@@ -84,6 +90,7 @@ export default class StartPrintDialog extends Mixins(BaseMixin, AfcMixin) {
     startPrint(filename = '') {
         filename = (this.currentPath + '/' + filename).substring(1)
         this.closeDialog()
+        this.$socket.emit('printer.gcode.script', { script: `SET_GCODE_VARIABLE MACRO=PRINT_START VARIABLE=do_z_tilt VALUE=${this.zTiltEnabled ? 1 : 0}\nSET_GCODE_VARIABLE MACRO=PRINT_START VARIABLE=do_bed_mesh VALUE=${this.bedMeshEnabled ? 1 : 0}` })
         this.$socket.emit('printer.print.start', { filename: filename }, { action: 'switchToDashboard' })
     }
 

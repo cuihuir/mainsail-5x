@@ -209,15 +209,22 @@
     },
     "Dialogs": {
         "StartPrint": {
+            "AdaptiveBedMesh": "自适应床网",
             "Afc": {
                 "FilamentTypeMismatch": "G-Code({file})中的耗材类型与所选耗材通道中的耗材类型({lane})不匹配。",
                 "FilamentWeightNotEnough": "所选耗材通道({lane})中的耗材不足。需要:{required}，可用:{available}。"
             },
+            "BedMesh": "床网",
+            "BedMeshAdaptive": "现场校准（自适应）",
+            "BedMeshDefault": "使用默认床网",
+            "BedMeshNone": "不使用床网",
             "DoYouWantToStartFilename": "是否开始打印文件{filename}？",
             "DoYouWantToStartFilenameFilament": "是否使用以下耗材开始打印文件{filename}？",
             "Headline": "开始任务",
+            "LevelingSettingsFailed": "PRINT_START 没有接受调平设置，未开始打印。",
             "Print": "打印",
-            "Timelapse": "延时摄影"
+            "Timelapse": "延时摄影",
+            "ZTiltAdjust": "Z 轴调平（Z_TILT）"
         }
     },
     "Editor": {

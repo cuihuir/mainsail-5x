@@ -17,9 +17,22 @@
             <start-print-dialog-mmu v-else-if="existsMmu" :file="file" />
             <start-print-dialog-spoolman v-else-if="existsSpoolman" :file="file" />
             <start-print-dialog-timelapse v-if="existsTimelapse" />
-            <v-card-text class="py-3 bt-1">
-                <settings-row title="Z tilt adjust" :dense="true"><v-switch v-model="zTiltEnabled" hide-details class="mt-0" /></settings-row>
-                <settings-row title="Adaptive bed mesh" :dense="true"><v-switch v-model="bedMeshEnabled" hide-details class="mt-0" /></settings-row>
+            <v-card-text v-if="levelingSupport" class="py-3 bt-1">
+                <settings-row v-if="levelingSupport.zTilt" :title="$t('Dialogs.StartPrint.ZTiltAdjust')" :dense="true">
+                    <v-switch v-model="zTiltEnabled" hide-details class="mt-0" />
+                </settings-row>
+                <settings-row
+                    v-if="levelingSupport.bedMesh === 'mode'"
+                    :title="$t('Dialogs.StartPrint.BedMesh')"
+                    :dense="true">
+                    <v-select v-model="bedMeshMode" :items="bedMeshModeItems" hide-details outlined dense />
+                </settings-row>
+                <settings-row
+                    v-else-if="levelingSupport.bedMesh === 'switch'"
+                    :title="$t('Dialogs.StartPrint.AdaptiveBedMesh')"
+                    :dense="true">
+                    <v-switch v-model="adaptiveBedMesh" hide-details class="mt-0" />
+                </settings-row>
             </v-card-text>
             <v-divider v-if="showDivider" class="my-0" />
             <v-card-actions>
@@ -45,13 +58,21 @@ import SettingsRow from '@/components/settings/SettingsRow.vue'
 import { mdiPrinter3d } from '@mdi/js'
 import { ServerSpoolmanStateSpool } from '@/store/server/spoolman/types'
 import AfcMixin from '@/components/mixins/afc'
+import {
+    BedMeshMode,
+    buildPrintStartScript,
+    findPrintStartMacro,
+    initialLevelingChoice,
+    PrintStartLevelingSupport,
+    resolveLevelingSupport,
+} from '@/components/printStartLeveling'
 
 @Component({
     components: { SettingsRow },
 })
 export default class StartPrintDialog extends Mixins(BaseMixin, AfcMixin) {
     zTiltEnabled = true
-    bedMeshEnabled = true
+    bedMeshMode: BedMeshMode = 'adaptive'
     mdiPrinter3d = mdiPrinter3d
 
     @VModel({ type: Boolean }) showDialog!: boolean
@@ -74,6 +95,34 @@ export default class StartPrintDialog extends Mixins(BaseMixin, AfcMixin) {
         return this.afcExists || this.existsSpoolman || this.existsTimelapse
     }
 
+    get printStartMacro() {
+        return findPrintStartMacro(this.$store.state.printer ?? {})
+    }
+
+    get levelingSupport(): PrintStartLevelingSupport | null {
+        return resolveLevelingSupport(this.printStartMacro)
+    }
+
+    get hasDefaultMesh(): boolean {
+        return 'default' in (this.$store.state.printer.bed_mesh?.profiles ?? {})
+    }
+
+    get bedMeshModeItems() {
+        return [
+            { text: this.$t('Dialogs.StartPrint.BedMeshAdaptive'), value: 'adaptive' },
+            { text: this.$t('Dialogs.StartPrint.BedMeshDefault'), value: 'default', disabled: !this.hasDefaultMesh },
+            { text: this.$t('Dialogs.StartPrint.BedMeshNone'), value: 'none' },
+        ]
+    }
+
+    get adaptiveBedMesh() {
+        return this.bedMeshMode === 'adaptive'
+    }
+
+    set adaptiveBedMesh(newVal: boolean) {
+        this.bedMeshMode = newVal ? 'adaptive' : 'default'
+    }
+
     get active_spool(): ServerSpoolmanStateSpool | null {
         return this.$store.state.server.spoolman.active_spool ?? null
     }
@@ -87,10 +136,25 @@ export default class StartPrintDialog extends Mixins(BaseMixin, AfcMixin) {
         return this.$t('Dialogs.StartPrint.DoYouWantToStartFilename', { filename: this.file?.filename ?? 'unknown' })
     }
 
-    startPrint(filename = '') {
+    async startPrint(filename = '') {
         filename = (this.currentPath + '/' + filename).substring(1)
         this.closeDialog()
-        this.$socket.emit('printer.gcode.script', { script: `SET_GCODE_VARIABLE MACRO=PRINT_START VARIABLE=do_z_tilt VALUE=${this.zTiltEnabled ? 1 : 0}\nSET_GCODE_VARIABLE MACRO=PRINT_START VARIABLE=do_bed_mesh VALUE=${this.bedMeshEnabled ? 1 : 0}` })
+
+        // PRINT_START reads these variables; do not start with the previous settings if Klipper refused them.
+        const support = this.levelingSupport
+        if (support) {
+            const script = buildPrintStartScript(support, {
+                zTilt: this.zTiltEnabled,
+                bedMeshMode: this.bedMeshMode,
+            })
+            try {
+                await this.$socket.emitAndWait('printer.gcode.script', { script })
+            } catch {
+                this.$toast.error(this.$t('Dialogs.StartPrint.LevelingSettingsFailed').toString())
+                return
+            }
+        }
+
         this.$socket.emit('printer.print.start', { filename: filename }, { action: 'switchToDashboard' })
     }
 
@@ -100,6 +164,12 @@ export default class StartPrintDialog extends Mixins(BaseMixin, AfcMixin) {
 
     @Watch('showDialog')
     onShowDialogChanged(newVal: boolean) {
+        if (newVal) {
+            const choice = initialLevelingChoice(this.printStartMacro, this.levelingSupport, this.hasDefaultMesh)
+            this.zTiltEnabled = choice.zTilt
+            this.bedMeshMode = choice.bedMeshMode
+        }
+
         if (!newVal || !this.file || this.file.metadataPulled || this.file.metadataRequested) return
 
         const fullPath = ['gcodes']

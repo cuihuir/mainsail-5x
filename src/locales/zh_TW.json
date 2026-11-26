@@ -209,15 +209,22 @@
     },
     "Dialogs": {
         "StartPrint": {
+            "AdaptiveBedMesh": "自適應床網",
             "Afc": {
                 "FilamentTypeMismatch": "G-Code 中的耗材類型 ({file}) 與所選通道的耗材類型 ({lane}) 不符。",
                 "FilamentWeightNotEnough": "所選通道 ({lane}) 的耗材不足。需要：{required}，目前可用：{available}。"
             },
+            "BedMesh": "床網",
+            "BedMeshAdaptive": "現場校準（自適應）",
+            "BedMeshDefault": "使用預設床網",
+            "BedMeshNone": "不使用床網",
             "DoYouWantToStartFilename": "您確定要開始列印 {filename} 嗎？",
             "DoYouWantToStartFilenameFilament": "您想要使用以下耗材開始列印 {filename} 嗎？",
             "Headline": "開始列印任務",
+            "LevelingSettingsFailed": "PRINT_START 沒有接受調平設定，未開始列印。",
             "Print": "列印",
-            "Timelapse": "縮時攝影"
+            "Timelapse": "縮時攝影",
+            "ZTiltAdjust": "Z 軸調平（Z_TILT）"
         }
     },
     "Editor": {

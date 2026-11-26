@@ -209,15 +209,22 @@
     },
     "Dialogs": {
         "StartPrint": {
+            "AdaptiveBedMesh": "Adaptive bed mesh",
             "Afc": {
                 "FilamentTypeMismatch": "Filament type in the G-Code ({file}) does not match the selected filament type ({lane}).",
                 "FilamentWeightNotEnough": "Not enough filament in the selected lane ({lane}). Required: {required}, Available: {available}."
             },
+            "BedMesh": "Bed mesh",
+            "BedMeshAdaptive": "Calibrate (adaptive)",
+            "BedMeshDefault": "Load default mesh",
+            "BedMeshNone": "No mesh",
             "DoYouWantToStartFilename": "Do you want to start {filename}?",
             "DoYouWantToStartFilenameFilament": "Do you want to start {filename} with the following filament?",
             "Headline": "Start Job",
+            "LevelingSettingsFailed": "PRINT_START did not accept the leveling settings, so the print was not started.",
             "Print": "print",
-            "Timelapse": "Timelapse"
+            "Timelapse": "Timelapse",
+            "ZTiltAdjust": "Z tilt adjust"
         }
     },
     "Editor": {

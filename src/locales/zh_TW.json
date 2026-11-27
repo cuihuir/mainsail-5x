@@ -215,9 +215,9 @@
                 "FilamentWeightNotEnough": "所選通道 ({lane}) 的耗材不足。需要：{required}，目前可用：{available}。"
             },
             "BedMesh": "床網",
-            "BedMeshAdaptive": "現場校準（自適應）",
-            "BedMeshDefault": "使用預設床網",
-            "BedMeshNone": "不使用床網",
+            "BedMeshAdaptive": "現場校準",
+            "BedMeshDefault": "預設床網",
+            "BedMeshNone": "不用床網",
             "DoYouWantToStartFilename": "您確定要開始列印 {filename} 嗎？",
             "DoYouWantToStartFilenameFilament": "您想要使用以下耗材開始列印 {filename} 嗎？",
             "Headline": "開始列印任務",

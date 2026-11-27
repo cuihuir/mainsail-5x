@@ -128,6 +128,11 @@
             :action-button-text="$t('Buttons.Yes')"
             :cancel-button-text="$t('Buttons.No')"
             @action="cancelJob" />
+        <start-print-dialog
+            v-if="reprintFile"
+            v-model="showReprintDialog"
+            :file="reprintFile"
+            :current-path="reprintPath" />
     </div>
 </template>
 
@@ -166,6 +171,8 @@ import {
 } from '@mdi/js'
 import { PrinterStateMacro } from '@/store/printer/types'
 import ConfirmationDialog from '@/components/dialogs/ConfirmationDialog.vue'
+import StartPrintDialog from '@/components/dialogs/StartPrintDialog.vue'
+import { FileStateGcodefile } from '@/store/files/types'
 
 @Component({
     components: {
@@ -180,6 +187,7 @@ import ConfirmationDialog from '@/components/dialogs/ConfirmationDialog.vue'
         StatusPanelPrintstatus,
         StatusPanelPrintstatusThumbnail,
         StatusPanelPauseAtLayerDialog,
+        StartPrintDialog,
     },
 })
 export default class StatusPanel extends Mixins(BaseMixin) {
@@ -195,6 +203,7 @@ export default class StatusPanel extends Mixins(BaseMixin) {
     mdiTrayFull = mdiTrayFull
 
     showCancelJobDialog = false
+    showReprintDialog = false
     boolShowObjects = false
     boolShowPauseAtLayer = false
 
@@ -452,7 +461,22 @@ export default class StatusPanel extends Mixins(BaseMixin) {
         this.$socket.emit('printer.gcode.script', { script: 'SDCARD_RESET_FILE' }, { loading: 'statusPrintClear' })
     }
 
+    // Reprint through the start print dialog, so PRINT_START gets its leveling options like a print from the file list.
+    get reprintFile(): FileStateGcodefile | undefined {
+        return this.$store.getters['files/getFile']('gcodes/' + this.current_filename) ?? undefined
+    }
+
+    get reprintPath(): string {
+        const lastSlash = this.current_filename.lastIndexOf('/')
+        return lastSlash > 0 ? '/' + this.current_filename.slice(0, lastSlash) : ''
+    }
+
     btnReprintJob() {
+        if (this.reprintFile) {
+            this.showReprintDialog = true
+            return
+        }
+
         this.$socket.emit('printer.print.start', { filename: this.current_filename }, { loading: 'statusPrintReprint' })
     }
 }

@@ -21,12 +21,19 @@
                 <settings-row v-if="levelingSupport.zTilt" :title="$t('Dialogs.StartPrint.ZTiltAdjust')" :dense="true">
                     <v-switch v-model="zTiltEnabled" hide-details class="mt-0" />
                 </settings-row>
-                <settings-row
-                    v-if="levelingSupport.bedMesh === 'mode'"
-                    :title="$t('Dialogs.StartPrint.BedMesh')"
-                    :dense="true">
-                    <v-select v-model="bedMeshMode" :items="bedMeshModeItems" hide-details outlined dense />
-                </settings-row>
+                <template v-if="levelingSupport.bedMesh === 'mode'">
+                    <div class="font-weight-bold mt-2 mb-2">{{ $t('Dialogs.StartPrint.BedMesh') }}</div>
+                    <v-btn-toggle v-model="bedMeshMode" mandatory dense color="primary" class="d-flex mb-1">
+                        <v-btn
+                            v-for="item in bedMeshModeItems"
+                            :key="item.value"
+                            :value="item.value"
+                            :disabled="item.disabled"
+                            class="flex-grow-1">
+                            {{ item.text }}
+                        </v-btn>
+                    </v-btn-toggle>
+                </template>
                 <settings-row
                     v-else-if="levelingSupport.bedMesh === 'switch'"
                     :title="$t('Dialogs.StartPrint.AdaptiveBedMesh')"
@@ -63,6 +70,7 @@ import {
     buildPrintStartScript,
     findPrintStartMacro,
     initialLevelingChoice,
+    PrintStartLevelingChoice,
     PrintStartLevelingSupport,
     resolveLevelingSupport,
 } from '@/components/printStartLeveling'
@@ -101,6 +109,11 @@ export default class StartPrintDialog extends Mixins(BaseMixin, AfcMixin) {
 
     get levelingSupport(): PrintStartLevelingSupport | null {
         return resolveLevelingSupport(this.printStartMacro)
+    }
+
+    // The last choice made in this dialog (Moonraker database, so it outlives a Klipper restart).
+    get rememberedLeveling(): Partial<PrintStartLevelingChoice> | null {
+        return this.$store.state.gui.view?.startPrintLeveling ?? null
     }
 
     get hasDefaultMesh(): boolean {
@@ -153,6 +166,10 @@ export default class StartPrintDialog extends Mixins(BaseMixin, AfcMixin) {
                 this.$toast.error(this.$t('Dialogs.StartPrint.LevelingSettingsFailed').toString())
                 return
             }
+            this.$store.dispatch('gui/saveSetting', {
+                name: 'view.startPrintLeveling',
+                value: { zTilt: this.zTiltEnabled, bedMeshMode: this.bedMeshMode },
+            })
         }
 
         this.$socket.emit('printer.print.start', { filename: filename }, { action: 'switchToDashboard' })
@@ -165,7 +182,12 @@ export default class StartPrintDialog extends Mixins(BaseMixin, AfcMixin) {
     @Watch('showDialog')
     onShowDialogChanged(newVal: boolean) {
         if (newVal) {
-            const choice = initialLevelingChoice(this.printStartMacro, this.levelingSupport, this.hasDefaultMesh)
+            const choice = initialLevelingChoice(
+                this.printStartMacro,
+                this.levelingSupport,
+                this.hasDefaultMesh,
+                this.rememberedLeveling
+            )
             this.zTiltEnabled = choice.zTilt
             this.bedMeshMode = choice.bedMeshMode
         }

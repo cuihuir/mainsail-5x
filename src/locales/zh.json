@@ -215,9 +215,9 @@
                 "FilamentWeightNotEnough": "所选耗材通道({lane})中的耗材不足。需要:{required}，可用:{available}。"
             },
             "BedMesh": "床网",
-            "BedMeshAdaptive": "现场校准（自适应）",
-            "BedMeshDefault": "使用默认床网",
-            "BedMeshNone": "不使用床网",
+            "BedMeshAdaptive": "现场校准",
+            "BedMeshDefault": "默认床网",
+            "BedMeshNone": "不用床网",
             "DoYouWantToStartFilename": "是否开始打印文件{filename}？",
             "DoYouWantToStartFilenameFilament": "是否使用以下耗材开始打印文件{filename}？",
             "Headline": "开始任务",

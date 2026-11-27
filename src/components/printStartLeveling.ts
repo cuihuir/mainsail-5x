@@ -53,19 +53,29 @@ export function normalizeBedMeshMode(value: unknown): BedMeshMode {
     return BED_MESH_MODES.includes(mode as BedMeshMode) ? (mode as BedMeshMode) : 'adaptive'
 }
 
-// The dialog starts from the macro's current values (its config defaults after a Klipper restart).
+// The dialog starts from the last choice made in it, kept in the Moonraker database so that it survives a Klipper
+// restart (which resets the macro variables to their config defaults); without one, from the macro's current values.
 export function initialLevelingChoice(
     macro: PrintStartMacro | null,
     support: PrintStartLevelingSupport | null,
-    hasDefaultMesh: boolean
+    hasDefaultMesh: boolean,
+    remembered: Partial<PrintStartLevelingChoice> | null = null
 ): PrintStartLevelingChoice {
     const variables = macro?.variables ?? {}
-    const zTilt = !support?.zTilt || Number(variables.do_z_tilt ?? 1) !== 0
+    let zTilt = !support?.zTilt || Number(variables.do_z_tilt ?? 1) !== 0
+    if (support?.zTilt && typeof remembered?.zTilt === 'boolean') zTilt = remembered.zTilt
 
     let bedMeshMode: BedMeshMode = 'adaptive'
     if (support?.bedMesh === 'mode') bedMeshMode = normalizeBedMeshMode(variables.bed_mesh_mode)
     else if (support?.bedMesh === 'switch')
         bedMeshMode = Number(variables.do_bed_mesh ?? 1) !== 0 ? 'adaptive' : 'default'
+
+    const rememberedMode = remembered?.bedMeshMode
+    if (support?.bedMesh && BED_MESH_MODES.includes(rememberedMode as BedMeshMode)) {
+        bedMeshMode = rememberedMode as BedMeshMode
+        // The older on/off switch can only express an adaptive mesh or the default profile.
+        if (support.bedMesh === 'switch' && bedMeshMode === 'none') bedMeshMode = 'default'
+    }
 
     if (bedMeshMode === 'default' && !hasDefaultMesh) bedMeshMode = 'adaptive'
 

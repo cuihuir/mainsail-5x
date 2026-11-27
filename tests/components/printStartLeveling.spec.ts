@@ -4,6 +4,7 @@ import {
     findPrintStartMacro,
     initialLevelingChoice,
     normalizeBedMeshMode,
+    PrintStartLevelingChoice,
     resolveLevelingSupport,
 } from '@/components/printStartLeveling'
 
@@ -49,6 +50,37 @@ describe('print start leveling options', () => {
 
         const old = { name: 'PRINT_START', variables: { do_z_tilt: 1, do_bed_mesh: 0 } }
         expect(initialLevelingChoice(old, resolveLevelingSupport(old), true)).toEqual({
+            zTilt: true,
+            bedMeshMode: 'default',
+        })
+    })
+
+    it('starts from the last choice made in the dialog when one is remembered', () => {
+        // After a Klipper restart the macro is back at its config defaults; the remembered choice wins.
+        const macro = { name: 'PRINT_START', variables: { do_z_tilt: 1, bed_mesh_mode: 'adaptive' } }
+        const support = resolveLevelingSupport(macro)
+        expect(initialLevelingChoice(macro, support, true, { zTilt: false, bedMeshMode: 'default' })).toEqual({
+            zTilt: false,
+            bedMeshMode: 'default',
+        })
+        // ... but never a missing default profile, and invalid remembered values are ignored.
+        expect(initialLevelingChoice(macro, support, false, { zTilt: false, bedMeshMode: 'default' })).toEqual({
+            zTilt: false,
+            bedMeshMode: 'adaptive',
+        })
+        const invalid = { zTilt: 'no', bedMeshMode: 'full' } as unknown as Partial<PrintStartLevelingChoice>
+        expect(initialLevelingChoice(macro, support, true, invalid)).toEqual({ zTilt: true, bedMeshMode: 'adaptive' })
+
+        // Options the macro does not declare stay at their defaults; the older switch cannot express 'none'.
+        const meshOnly = { name: 'PRINT_START', variables: { bed_mesh_mode: 'adaptive' } }
+        expect(
+            initialLevelingChoice(meshOnly, resolveLevelingSupport(meshOnly), true, {
+                zTilt: false,
+                bedMeshMode: 'none',
+            })
+        ).toEqual({ zTilt: true, bedMeshMode: 'none' })
+        const old = { name: 'PRINT_START', variables: { do_z_tilt: 1, do_bed_mesh: 1 } }
+        expect(initialLevelingChoice(old, resolveLevelingSupport(old), true, { bedMeshMode: 'none' })).toEqual({
             zTilt: true,
             bedMeshMode: 'default',
         })

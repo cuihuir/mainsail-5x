@@ -215,8 +215,8 @@
                 "FilamentWeightNotEnough": "Not enough filament in the selected lane ({lane}). Required: {required}, Available: {available}."
             },
             "BedMesh": "Bed mesh",
-            "BedMeshAdaptive": "Calibrate (adaptive)",
-            "BedMeshDefault": "Load default mesh",
+            "BedMeshAdaptive": "Calibrate",
+            "BedMeshDefault": "Default mesh",
             "BedMeshNone": "No mesh",
             "DoYouWantToStartFilename": "Do you want to start {filename}?",
             "DoYouWantToStartFilenameFilament": "Do you want to start {filename} with the following filament?",
